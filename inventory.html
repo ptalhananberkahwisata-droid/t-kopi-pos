@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Inventory - T-KOPI</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  margin:0;
+  font-family: 'Segoe UI', sans-serif;
+  background:#f3f4f6;
+}
+
+.navbar {
+  background:white;
+  padding:15px 25px;
+  display:flex;
+  justify-content:space-between;
+  box-shadow:0 5px 15px rgba(0,0,0,0.05);
+}
+
+.container {
+  padding:25px;
+  max-width:1100px;
+  margin:auto;
+}
+
+.card {
+  background:white;
+  padding:20px;
+  border-radius:15px;
+  box-shadow:0 10px 25px rgba(0,0,0,0.05);
+  margin-bottom:20px;
+}
+
+input, select {
+  padding:10px;
+  border-radius:8px;
+  border:1px solid #ddd;
+  margin-right:10px;
+  margin-bottom:10px;
+}
+
+button {
+  padding:10px 15px;
+  border:none;
+  border-radius:8px;
+  cursor:pointer;
+}
+
+.add-btn {
+  background:#2563eb;
+  color:white;
+}
+
+.delete-btn {
+  background:#ef4444;
+  color:white;
+}
+
+table {
+  width:100%;
+  border-collapse:collapse;
+}
+
+th, td {
+  padding:12px;
+  text-align:left;
+  border-bottom:1px solid #eee;
+}
+
+@media(max-width:768px){
+  table, thead, tbody, th, td, tr {
+    display:block;
+  }
+
+  th {
+    display:none;
+  }
+
+  td {
+    border:none;
+    padding:8px 0;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <h2>Inventory Management</h2>
+  <button onclick="window.location.href='dashboard.html'">Back</button>
+</div>
+
+<div class="container">
+
+  <div class="card">
+    <h3>Tambah Produk / Bahan</h3>
+
+    <input id="name" placeholder="Nama">
+    <input id="category" placeholder="Kategori">
+    <input id="stock" type="number" placeholder="Stock">
+    <input id="unit" placeholder="Unit (kg, pcs, liter)">
+    <button class="add-btn" onclick="addProduct()">Tambah</button>
+  </div>
+
+  <div class="card">
+    <h3>Daftar Stock</h3>
+    <table>
+      <thead>
+        <tr>
+          <th>Nama</th>
+          <th>Kategori</th>
+          <th>Stock</th>
+          <th>Unit</th>
+          <th>Aksi</th>
+        </tr>
+      </thead>
+      <tbody id="productTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<script>
+
+const client = window.supabase.createClient(
+  "PASTE_PROJECT_URL",
+  "PASTE_ANON_KEY"
+);
+
+loadProducts();
+
+async function loadProducts() {
+  const { data } = await client.from("products").select("*").order("created_at", { ascending:false });
+
+  let html = "";
+  data.forEach(p => {
+    html += `
+      <tr>
+        <td>${p.name}</td>
+        <td>${p.category}</td>
+        <td>${p.stock}</td>
+        <td>${p.unit}</td>
+        <td>
+          <button onclick="increaseStock('${p.id}', ${p.stock})">+</button>
+          <button class="delete-btn" onclick="deleteProduct('${p.id}')">Hapus</button>
+        </td>
+      </tr>
+    `;
+  });
+
+  document.getElementById("productTable").innerHTML = html;
+}
+
+async function addProduct() {
+  const name = document.getElementById("name").value;
+  const category = document.getElementById("category").value;
+  const stock = document.getElementById("stock").value;
+  const unit = document.getElementById("unit").value;
+
+  await client.from("products").insert({
+    name, category, stock, unit
+  });
+
+  location.reload();
+}
+
+async function increaseStock(id, currentStock) {
+  const tambah = prompt("Tambah stock berapa?");
+  if (!tambah) return;
+
+  await client.from("products")
+    .update({ stock: Number(currentStock) + Number(tambah) })
+    .eq("id", id);
+
+  location.reload();
+}
+
+async function deleteProduct(id) {
+  if (!confirm("Hapus produk?")) return;
+
+  await client.from("products")
+    .delete()
+    .eq("id", id);
+
+  location.reload();
+}
+
+</script>
+
+</body>
+</html>
