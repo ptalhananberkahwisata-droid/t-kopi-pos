@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>T-KOPI POS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="font-family:monospace;padding:20px">
+
+<h2>T-KOPI WEB POS</h2>
+
+<input id="shiftId" placeholder="Masukkan Shift ID" style="width:300px"><br><br>
+<button onclick="closeShift()">TUTUP SHIFT & PRINT</button>
+
+<div id="receipt"></div>
+
+<script>
+
+const supabase = window.supabase.createClient(
+  "https://YOUR_PROJECT.supabase.co",
+  "YOUR_PUBLIC_ANON_KEY"
+);
+
+async function closeShift() {
+
+  const shiftId = document.getElementById("shiftId").value;
+
+  const { error } = await supabase.rpc(
+    "close_shift",
+    { p_shift_id: shiftId }
+  );
+
+  if (error) {
+    alert(error.message);
+    return;
+  }
+
+  const { data } = await supabase
+    .from("shift_stock_print_view")
+    .select("*")
+    .eq("shift_id", shiftId);
+
+  let html = "===== TUTUP SHIFT =====<br><br>";
+
+  data.forEach(item => {
+    html += item.product_name + " : " + item.stock_remaining + "<br>";
+  });
+
+  document.getElementById("receipt").innerHTML = html;
+
+  window.print();
+}
+
+</script>
+
+</body>
+</html>
