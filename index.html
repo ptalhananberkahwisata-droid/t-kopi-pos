@@ -1,3 +1,27 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>T-KOPI POS</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+
+<body style="font-family:monospace;padding:20px">
+
+<h2>T-KOPI WEB POS</h2>
+
+<input id="shiftId" placeholder="Masukkan Shift ID" style="width:300px"><br><br>
+<button onclick="closeShift()">TUTUP SHIFT & PRINT</button>
+
+<div id="receipt"></div>
+
+<script>
+
+const supabase = window.supabase.createClient(
+  "https://wlaxqwqvefnwwczbhkjl.supabase.co",
+  "ISI_PUBLIC_ANON_KEY_KAMU"
+);
+
 async function closeShift() {
 
   const shiftId = document.getElementById("shiftId").value;
@@ -41,9 +65,14 @@ async function closeShift() {
     });
   }
 
-  html += `<br>=====================<br>
-           TERIMA KASIH`;
+  html += `<br>=====================<br>TERIMA KASIH`;
 
   document.getElementById("receipt").innerHTML = html;
+
   window.print();
 }
+
+</script>
+
+</body>
+</html>
