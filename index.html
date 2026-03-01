@@ -1,80 +1,49 @@
-<!DOCTYPE html>
-<html>
-<head>
-<meta charset="UTF-8">
-<title>T-KOPI POS</title>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<style>
-body{font-family:monospace;padding:20px}
-.section{margin-top:20px}
-</style>
-</head>
-
-<body>
-
-<h2>T-KOPI SHIFT REPORT</h2>
-
-<input id="shiftId" placeholder="Masukkan Shift ID" style="width:300px"><br><br>
-<button onclick="closeShift()">TUTUP SHIFT & PRINT</button>
-
-<div id="receipt"></div>
-
-<script>
-
-const supabase = window.supabase.createClient(
-  "https://wlaxqwqvefnwwczbhkjl.supabase.co",
-  "YOUR_PUBLIC_KEY"
-);
-
-async function closeShift(){
+async function closeShift() {
 
   const shiftId = document.getElementById("shiftId").value;
 
-  await supabase.rpc("close_shift",{ p_shift_id: shiftId });
-
-  const { data: summary } = await supabase
-    .from("shift_report_print_view")
+  const { data, error } = await supabase
+    .from("shift_close_report_view")
     .select("*")
     .eq("shift_id", shiftId)
     .single();
 
-  const { data: items } = await supabase
-    .from("shift_items_sold_view")
-    .select("*")
-    .eq("shift_id", shiftId);
+  if (error) {
+    alert(error.message);
+    return;
+  }
 
-  const { data: payments } = await supabase
-    .from("shift_payment_summary_view")
-    .select("*")
-    .eq("shift_id", shiftId);
+  let html = `
+  <h3>T-KOPI COFFEE</h3>
+  =====================<br>
+  Shift ID: ${data.shift_id}<br>
+  Kasir: ${data.cashier_email}<br>
+  Open: ${data.open_time}<br>
+  Close: ${data.close_time}<br>
+  ---------------------<br>
+  Total Transaksi: ${data.total_transactions}<br>
+  Total Revenue: Rp ${data.total_revenue}<br>
+  ---------------------<br>
+  <b>PAYMENT SUMMARY</b><br>
+  `;
 
-  let html = "";
+  if (data.payment_summary) {
+    data.payment_summary.forEach(p => {
+      html += `${p.payment_method} : Rp ${p.total_amount}<br>`;
+    });
+  }
 
-  html += "===== SHIFT REPORT =====<br>";
-  html += "Kasir : " + summary.cashier_name + "<br>";
-  html += "Open  : " + summary.open_time + "<br>";
-  html += "Close : " + summary.close_time + "<br>";
-  html += "Total Transaksi : " + summary.total_transactions + "<br>";
-  html += "Total Omzet     : " + summary.total_revenue + "<br>";
+  html += `<br><b>ITEM TERJUAL</b><br>`;
 
-  html += "<div class='section'><b>ITEM TERJUAL</b><br>";
-  items.forEach(i=>{
-    html += i.product_name + " x" + i.total_qty + " = " + i.total_amount + "<br>";
-  });
-  html += "</div>";
+  if (data.items_summary) {
+    data.items_summary.forEach(i => {
+      html += `${i.product_name} (${i.total_qty}) : Rp ${i.total_amount}<br>`;
+    });
+  }
 
-  html += "<div class='section'><b>METODE PEMBAYARAN</b><br>";
-  payments.forEach(p=>{
-    html += p.payment_method + " : " + p.total_amount + "<br>";
-  });
-  html += "</div>";
+  html += `<br>=====================<br>
+           TERIMA KASIH`;
 
   document.getElementById("receipt").innerHTML = html;
-
   window.print();
 }
-
-</script>
-
-</body>
-</html>
