@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>T-KOPI Dashboard</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<style>
+body {
+  margin: 0;
+  font-family: 'Segoe UI', sans-serif;
+  background: #f3f4f6;
+}
+
+.navbar {
+  background: white;
+  padding: 15px 30px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+}
+
+.navbar h2 {
+  margin: 0;
+}
+
+.navbar button {
+  padding: 8px 14px;
+  border-radius: 8px;
+  border: none;
+  background: #ef4444;
+  color: white;
+  cursor: pointer;
+}
+
+.container {
+  padding: 30px;
+  max-width: 1200px;
+  margin: auto;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+.card {
+  background: white;
+  padding: 25px;
+  border-radius: 15px;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.05);
+}
+
+.card h3 {
+  margin: 0;
+  font-size: 14px;
+  color: #666;
+}
+
+.card p {
+  font-size: 24px;
+  margin: 10px 0 0;
+  font-weight: bold;
+}
+
+@media(max-width:768px){
+  .container {
+    padding: 20px;
+  }
+}
+</style>
+</head>
+
+<body>
+
+<div class="navbar">
+  <h2>T-KOPI POS</h2>
+  <button onclick="logout()">Logout</button>
+</div>
+
+<div class="container">
+
+  <h2>Dashboard</h2>
+
+  <div class="grid">
+    <div class="card">
+      <h3>Total Transaksi Hari Ini</h3>
+      <p id="totalTransaksi">Loading...</p>
+    </div>
+
+    <div class="card">
+      <h3>Total Revenue Hari Ini</h3>
+      <p id="totalRevenue">Loading...</p>
+    </div>
+
+    <div class="card">
+      <h3>Shift Aktif</h3>
+      <p id="activeShift">Loading...</p>
+    </div>
+
+    <div class="card">
+      <h3>Total Produk</h3>
+      <p id="totalProduk">Loading...</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+
+const client = window.supabase.createClient(
+  "PASTE_PROJECT_URL",
+  "PASTE_ANON_KEY"
+);
+
+checkSession();
+loadDashboard();
+
+async function checkSession() {
+  const { data } = await client.auth.getSession();
+  if (!data.session) {
+    window.location.href = "index.html";
+  }
+}
+
+async function logout() {
+  await client.auth.signOut();
+  window.location.href = "index.html";
+}
+
+async function loadDashboard() {
+
+  // Total transaksi hari ini
+  const today = new Date().toISOString().split('T')[0];
+
+  const { data: transaksi } = await client
+    .from("orders")
+    .select("*")
+    .gte("created_at", today);
+
+  document.getElementById("totalTransaksi").innerText =
+    transaksi ? transaksi.length : 0;
+
+  // Total revenue hari ini
+  const { data: revenue } = await client
+    .from("orders")
+    .select("total")
+    .gte("created_at", today);
+
+  let total = 0;
+  if (revenue) {
+    revenue.forEach(r => total += r.total);
+  }
+
+  document.getElementById("totalRevenue").innerText =
+    "Rp " + total.toLocaleString();
+
+  // Shift aktif
+  const { data: shift } = await client
+    .from("shifts")
+    .select("*")
+    .is("close_time", null);
+
+  document.getElementById("activeShift").innerText =
+    shift ? shift.length : 0;
+
+  // Total produk
+  const { data: produk } = await client
+    .from("products")
+    .select("*");
+
+  document.getElementById("totalProduk").innerText =
+    produk ? produk.length : 0;
+}
+
+</script>
+
+</body>
+</html>
